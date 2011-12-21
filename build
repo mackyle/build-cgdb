@@ -1,0 +1,269 @@
+#!/bin/bash
+
+# build cgdb script
+# Copyright (C) 2011 Kyle J. McKay.  All rights reserved.
+
+set -e
+PATH="`getconf PATH`"
+export PATH
+myname="$0"
+while [ -L "$myname" ]; do
+  oldname="$myname"
+  myname="$(readlink "$myname")"
+  case "$myname" in /*) :;; *)
+    myname="$(dirname "$oldname")/$myname"
+  esac
+done
+unset oldname
+mydir="$(cd "$(dirname "$myname")" && pwd -P)"
+myname="$(basename "$myname")"
+
+# Version 5.2 is the last GPLv2 version of readline
+# cgdb requires readline version 5.1 or later
+READLINE='http://ftp.gnu.org/gnu/readline/readline-5.2.tar.gz'
+READLINE_MD5=e39331f32ad14009b9ff49cc10c5e751
+
+CGDB='http://downloads.sourceforge.net/cgdb/cgdb-0.6.6.tar.gz'
+CGDB_MD5=394b542b495755ab8392b7e88dace744
+
+DMG_NAME=cgdb-0.6.6.dmg
+
+echo ""
+
+strip1=
+if ! (tar --strip-path=1 || : ) 2>&1 | grep -qi 'unrecognized option'; then
+  strip1=--strip-path=1
+elif ! (tar --strip-components=1 || : ) 2>&1 | grep -qi 'unrecognized option'; then
+  strip1=--strip-components=1
+fi
+if [ -z "$strip1" ]; then
+  echo "error: Cannot figure out tar option to strip top level path" >&2
+  exit 1
+fi
+
+if xs="`type -P xcode-select`"; then
+  SDKROOT="`xcode-select -print-path`"
+fi
+if [ -z "$SDKROOT" ]; then
+  SDKROOT=/Developer
+fi
+SDK104="$SDKROOT/SDKs/MacOSX10.4u.sdk"
+if [ ! -d "$SDK104" -o ! -r "$SDK104/usr/include/AvailabilityMacros.h" ]; then
+  echo "error: No Mac OS X 10.4u SDK found at $SDK104" >&2
+  exit 1
+fi
+
+if ! pm="`PATH="$SDKROOT/usr/bin:$SDKROOT/Tools" type -P packagemaker`"; then
+  echo "error: Cannot locate packagemaker executable" >&2
+fi
+if ! sf="`PATH="$SDKROOT/usr/bin:$SDKROOT/Tools" type -P SetFile`"; then
+  echo "error: Cannot locate SetFile executable" >&2
+fi
+
+AGENT='Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0)'
+if [ ! -d "$mydir/sources" ]; then
+  mkdir "$mydir/sources"
+fi
+
+if [ ! -r "$mydir/sources/readline.tar.gz" ] || [ `md5 -q "$mydir/sources/readline.tar.gz"` != $READLINE_MD5 ]; then
+  echo "*** fetching readline sources from $READLINE"
+  echo ""
+  rm -f "$mydir/sources/readline.tar.gz"
+  curl -f -H "User-Agent: $AGENT" -L -o "$mydir/sources/readline.tar.gz" "$READLINE"
+  echo ""
+  if [ `md5 -q "$mydir/sources/readline.tar.gz"` != $READLINE_MD5 ]; then
+    echo "error: readline sources md5 mismatch (expected $READLINE_MD5)" >&2
+    exit 1
+  fi
+fi
+
+if [ ! -r "$mydir/sources/cgdb.tar.gz" ] || [ `md5 -q "$mydir/sources/cgdb.tar.gz"` != $CGDB_MD5 ]; then
+  echo "*** fetching cgdb sources from $CGDB"
+  echo ""
+  rm -f "$mydir/sources/cgdb.tar.gz"
+  curl -f -H "User-Agent:" -L -o "$mydir/sources/cgdb.tar.gz" "$CGDB"
+  echo ""
+  if [ `md5 -q "$mydir/sources/cgdb.tar.gz"` != $CGDB_MD5 ]; then
+    echo "error: cgdb sources md5 mismatch (expected $CGDB_MD5)" >&2
+    exit 1
+  fi
+fi
+
+echo "*** expanding sources"
+rm -rf "$mydir/sources/cgdb" "$mydir/sources/readline"
+mkdir "$mydir/sources/cgdb" "$mydir/sources/readline"
+tar -xzf "$mydir/sources/readline.tar.gz" $strip1 --directory="$mydir/sources/readline"
+tar -xzf "$mydir/sources/cgdb.tar.gz" $strip1 --directory="$mydir/sources/cgdb"
+echo ""
+
+echo "*** applying patches"
+echo "tokenizer extensions: adding .cp, .m, .M and .mm"
+patch "$mydir/sources/cgdb/cgdb/tokenizer/src/tokenizer.c" < "$mydir/patches/tokenizer-exts.patch"
+echo ""
+
+echo "*** preparing local install area"
+rm -rf "$mydir/local"
+mkdir "$mydir/local" "$mydir/local/include" "$mydir/local/lib" "$mydir/local/bin" "$mydir/local/share"
+mkdir "$mydir/local/share/man" "$mydir/local/share/man/man1"
+(umask 0; ln -s share/man "$mydir/local/man")
+echo ""
+
+CC=gcc-4.0
+COPT="-Os"
+ARCH="-arch i386 -arch ppc"
+OSXDK="-isysroot$SDK104"
+OSXMN="-mmacosx-version-min=10.4"
+CFLAGS="$ARCH $OSXDK $OSXMN $COPT"
+LDFLAGS="-Wl,-search_paths_first,-headerpad_max_install_names"
+CPATH="$mydir/local/include"
+LIBRARY_PATH="$mydir/local/lib"
+
+export CC
+export CFLAGS
+export LDFLAGS
+export CPATH
+export LIBRARY_PATH
+
+echo "*** configuring readline"
+rm -rf "$mydir/sources/readline-build"
+mkdir "$mydir/sources/readline-build"
+(cd "$mydir/sources/readline-build" && ../readline/configure --enable-static --disable-shared --prefix="$mydir/local")
+echo ""
+
+echo "*** building readline"
+make -w -C "$mydir/sources/readline-build"
+echo ""
+
+echo "*** installing readline to local area"
+make -w -C "$mydir/sources/readline-build" install
+echo ""
+
+echo "*** configuring cgdb"
+rm -rf "$mydir/sources/cgdb-build"
+mkdir "$mydir/sources/cgdb-build"
+(cd "$mydir/sources/cgdb-build" && ../cgdb/configure --disable-dependency-tracking --with-readline="$mydir/local" --prefix="$mydir/local")
+echo ""
+
+echo "*** building cgdb"
+make -w -C "$mydir/sources/cgdb-build"
+echo ""
+
+echo "*** installing cgdb to local area"
+make -w -C "$mydir/sources/cgdb-build" install
+echo ""
+
+if ! fr="`PATH="$PATH:/usr/local/bin:/opt/local/bin:/sw/bin" type -P fakeroot`"; then
+  echo "error: unable to find fakeroot installation" >&2
+  echo "error: no installer will be created" >&2
+  echo "error: the completed build is in $mydir/local" >&2
+  echo "info: see http://mackyle.github.com/fakeroot to install fakeroot" >&2
+  exit 1
+fi
+
+echo "*** creating installer image area"
+if [ -d "$mydir/installer" ]; then
+  chmod -R u+w "$mydir/installer"
+fi
+rm -rf "$mydir/installer"
+mkdir "$mydir/installer" "$mydir/installer/usrlocal" "$mydir/installer/cgdb"
+mkdir "$mydir/installer/usrlocal/bin" "$mydir/installer/usrlocal/share"
+mkdir "$mydir/installer/usrlocal/share/man"
+mkdir "$mydir/installer/usrlocal/share/man/man1"
+mkdir "$mydir/installer/usrlocal/share/info"
+mkdir "$mydir/installer/usrlocal/share/cgdb"
+cat "$mydir/local/bin/cgdb" > "$mydir/installer/usrlocal/bin/cgdb"
+cat "$mydir/local/share/man/man1/cgdb.1" > "$mydir/installer/usrlocal/share/man/man1/cgdb.1"
+cat "$mydir/local/share/info/cgdb.info" > "$mydir/installer/usrlocal/share/info/cgdb.info"
+cat "$mydir/local/share/cgdb/cgdb.txt" > "$mydir/installer/usrlocal/share/cgdb/cgdb.txt"
+find "$mydir/installer/usrlocal" ! -type d -print0 | xargs -0 chmod 444
+chmod 555 "$mydir/installer/usrlocal/bin/cgdb"
+find "$mydir/installer/usrlocal" -type d -print0 | xargs -0 chmod 755
+timenow="`date +%s`"
+stamp="`perl -e '@x=localtime(86400*int($ARGV[0]/86400));printf("%04d%02d%02d%02d%02d.%02d",$x[5]+1900,$x[4]+1,$x[3],$x[2],$x[1],$x[0])' "$timenow"`"
+stampsf="`perl -e '@x=localtime(86400*int($ARGV[0]/86400));printf("%02d/%02d/%04d %02d:%02d:%02d",$x[4]+1,$x[3],$x[5]+1900,$x[2],$x[1],$x[0])' "$timenow"`"
+find "$mydir/installer/usrlocal" -print0 | xargs -0n1 "$sf" -d "$stampsf"
+find "$mydir/installer/usrlocal" -print0 | xargs -0 touch -t "$stamp"
+echo ""
+
+echo "*** preparing installer description files"
+cat > "$mydir/installer/Description.plist" <<DESCRIPTION
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IFPkgDescriptionDescription</key>
+	<string>cgdb: the curses debugger</string>
+	<key>IFPkgDescriptionTitle</key>
+	<string>cgdb</string>
+</dict>
+</plist>
+DESCRIPTION
+cat > "$mydir/installer/Info.plist" <<INFOPLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>net.sourceforge.cgdb</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.6.6</string>
+	<key>IFMajorVersion</key>
+	<integer>6</integer>
+	<key>IFMinorVersion</key>
+	<integer>6</integer>
+	<key>IFPkgFlagAllowBackRev</key>
+	<true/>
+	<key>IFPkgFlagAuthorizationAction</key>
+	<string>RootAuthorization</string>
+	<key>IFPkgFlagDefaultLocation</key>
+	<string>/usr/local</string>
+	<key>IFPkgFlagFollowLinks</key>
+	<true/>
+	<key>IFPkgFlagInstallFat</key>
+	<true/>
+	<key>IFPkgFlagIsRequired</key>
+	<false/>
+	<key>IFPkgFlagOverwritePermissions</key>
+	<false/>
+	<key>IFPkgFlagRelocatable</key>
+	<false/>
+	<key>IFPkgFlagRestartAction</key>
+	<string>None</string>
+	<key>IFPkgFlagRootVolumeOnly</key>
+	<false/>
+	<key>IFPkgFlagUpdateInstalledLanguages</key>
+	<false/>
+	<key>IFPkgFormatVersion</key>
+	<real>0.10000000149011612</real>
+</dict>
+</plist>
+INFOPLIST
+echo ""
+
+echo "*** creating installer"
+"$fr" bash -s <<FAKEROOT
+chown -R root:wheel "$mydir/installer/usrlocal"
+"$pm" -build -v -u -p "$mydir/installer/cgdb/cgdb.pkg" -ds -f "$mydir/installer/usrlocal" -i "$mydir/installer/Info.plist" -d "$mydir/installer/Description.plist" -r "$mydir/resources"
+find "$mydir/installer/cgdb/cgdb.pkg/Contents/Resources" -type d -mindepth 1 -print0 | xargs -0 rm -rf
+cat "$mydir/installer/Description.plist" > "$mydir/installer/cgdb/cgdb.pkg/Contents/Resources/Description.plist"
+find "$mydir/installer/cgdb" ! -type d -print0 | xargs -0 chmod 444
+find "$mydir/installer/cgdb" -type d -print0 | xargs -0 chmod 555
+find "$mydir/installer/cgdb" -print0 | xargs -0n1 "$sf" -d "$stampsf"
+find "$mydir/installer/cgdb" -print0 | xargs -0 touch -t "$stamp"
+hdiutil create -scrub -srcfolder "$mydir/installer/cgdb" "$mydir/installer/cgdb.dmg" -format UDBZ -anyowners -skipunreadable
+rm -f "$mydir/$DMG_NAME"
+cat "$mydir/installer/cgdb.dmg" > "$mydir/$DMG_NAME"
+"$sf" -d "$stampsf" "$mydir/$DMG_NAME"
+touch -t "$stamp" "$mydir/$DMG_NAME"
+FAKEROOT
+echo ""
+
+echo "*** cleaning up"
+rm -rf "$mydir/installer" "$mydir/local"
+rm -rf "$mydir/sources/readline" "$mydir/sources/readline-build"
+rm -rf "$mydir/sources/cgdb" "$mydir/sources/cgdb-build"
+echo ""
+
+echo "*** success"
+echo "Installer located at $mydir/$DMG_NAME"
+exit 0

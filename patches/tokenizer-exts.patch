@@ -1,0 +1,11 @@
+--- tokenizer.c	2010-11-13 10:09:48.000000000 +0000
++++ tokenizer.c	2010-11-13 10:09:48.000000000 +0000
+@@ -5,7 +5,7 @@
+ 
+ /* Some default file extensions */
+ char *c_extensions[] = {
+-    ".c", ".C", ".cc", ".cpp", ".cxx", ".h", ".hpp", ".hxx" };
++    ".c", ".C", ".cc", ".cpp", ".cxx", ".h", ".hpp", ".hxx", ".cp", ".m", ".M", ".mm" };
+ char *ada_extensions[] = { ".adb", ".ads", ".ada",".ADB", ".ADS", ".ADA" };
+ 
+ extern int c_lex ( void );
