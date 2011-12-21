@@ -60,6 +60,19 @@ if ! sf="`PATH="$SDKROOT/usr/bin:$SDKROOT/Tools" type -P SetFile`"; then
   echo "error: Cannot locate SetFile executable" >&2
 fi
 
+if ! fr="`PATH="$PATH:/usr/local/bin:/opt/local/bin:/sw/bin" type -P fakeroot`"; then
+  echo "*** ERROR: missing fakeroot"
+  echo ""
+  echo "error: unable to find fakeroot installation" >&2
+  echo "warning: build proceeding, but no installer will be created" >&2
+  echo "info: see http://mackyle.github.com/fakeroot to install fakeroot" >&2
+  echo ""
+  sleep 2
+else
+  # try to trigger the fakeroot bug now if it's an old version
+  "$fr" find "$mydir" -print > /dev/null
+fi
+
 AGENT='Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0)'
 if [ ! -d "$mydir/sources" ]; then
   mkdir "$mydir/sources"
@@ -152,10 +165,12 @@ echo "*** installing cgdb to local area"
 make -w -C "$mydir/sources/cgdb-build" install
 echo ""
 
-if ! fr="`PATH="$PATH:/usr/local/bin:/opt/local/bin:/sw/bin" type -P fakeroot`"; then
+if [ -z "$fr" ]; then
+  echo "*** ERROR: missing fakeroot"
+  echo ""
   echo "error: unable to find fakeroot installation" >&2
-  echo "error: no installer will be created" >&2
-  echo "error: the completed build is in $mydir/local" >&2
+  echo "warning: no installer will be created" >&2
+  echo "warning: the completed build is in $mydir/local" >&2
   echo "info: see http://mackyle.github.com/fakeroot to install fakeroot" >&2
   exit 1
 fi
