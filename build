@@ -112,6 +112,8 @@ echo ""
 echo "*** applying patches"
 echo "tokenizer extensions: adding .cp, .m, .M and .mm"
 patch "$mydir/sources/cgdb/cgdb/tokenizer/src/tokenizer.c" < "$mydir/patches/tokenizer-exts.patch"
+echo "line listings: only list 1 line (fixes clang problem)"
+patch -p1 -d "$mydir/sources/cgdb" < "$mydir/patches/cgdb-0.6.6_clang_fix.patch"
 echo ""
 
 echo "*** preparing local install area"
@@ -220,8 +222,12 @@ cat > "$mydir/installer/Info.plist" <<INFOPLIST
 <dict>
 	<key>CFBundleIdentifier</key>
 	<string>net.sourceforge.cgdb</string>
+	<key>CFBundleGetInfoString</key>
+	<string>cgdb 0.6.6_2</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.6.6</string>
+	<string>0.6.6_2</string>
+	<key>CFBundleVersion</key>
+	<string>06.6.2</string>
 	<key>IFMajorVersion</key>
 	<integer>6</integer>
 	<key>IFMinorVersion</key>
