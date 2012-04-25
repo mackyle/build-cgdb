@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # build cgdb script
-# Copyright (C) 2011 Kyle J. McKay.  All rights reserved.
+# Copyright (C) 2011,2012 Kyle J. McKay.  All rights reserved.
 
 set -e
 PATH="`getconf PATH`"
@@ -31,9 +31,9 @@ DMG_NAME=cgdb-0.6.6.dmg
 echo ""
 
 strip1=
-if ! (tar --strip-path=1 || : ) 2>&1 | grep -qi 'unrecognized option'; then
+if ! (tar --strip-path=1 || : ) 2>&1 | grep -Eqi 'unrecognized option|not supported'; then
   strip1=--strip-path=1
-elif ! (tar --strip-components=1 || : ) 2>&1 | grep -qi 'unrecognized option'; then
+elif ! (tar --strip-components=1 || : ) 2>&1 | grep -Eqi 'unrecognized option|not supported'; then
   strip1=--strip-components=1
 fi
 if [ -z "$strip1" ]; then
