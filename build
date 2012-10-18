@@ -23,7 +23,8 @@ myname="$(basename "$myname")"
 READLINE='http://ftp.gnu.org/gnu/readline/readline-5.2.tar.gz'
 READLINE_MD5=e39331f32ad14009b9ff49cc10c5e751
 
-CGDB='http://downloads.sourceforge.net/cgdb/cgdb-0.6.6.tar.gz'
+#CGDB='http://downloads.sourceforge.net/cgdb/cgdb-0.6.6.tar.gz'
+CGDB='http://github.com/downloads/cgdb/cgdb/cgdb-0.6.6.tar.gz'
 CGDB_MD5=394b542b495755ab8392b7e88dace744
 
 DMG_NAME=cgdb-0.6.6.dmg
@@ -94,7 +95,7 @@ if [ ! -r "$mydir/sources/cgdb.tar.gz" ] || [ `md5 -q "$mydir/sources/cgdb.tar.g
   echo "*** fetching cgdb sources from $CGDB"
   echo ""
   rm -f "$mydir/sources/cgdb.tar.gz"
-  curl -f -H "User-Agent:" -L -o "$mydir/sources/cgdb.tar.gz" "$CGDB"
+  curl -f -k -H "User-Agent:" -L -o "$mydir/sources/cgdb.tar.gz" "$CGDB"
   echo ""
   if [ `md5 -q "$mydir/sources/cgdb.tar.gz"` != $CGDB_MD5 ]; then
     echo "error: cgdb sources md5 mismatch (expected $CGDB_MD5)" >&2
