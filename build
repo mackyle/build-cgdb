@@ -130,7 +130,7 @@ ARCH="-arch i386 -arch ppc"
 OSXDK="-isysroot$SDK104"
 OSXMN="-mmacosx-version-min=10.4"
 CFLAGS="$ARCH $OSXDK $OSXMN $COPT"
-LDFLAGS="-Wl,-search_paths_first,-headerpad_max_install_names"
+LDFLAGS="-Wl,-search_paths_first,-headerpad_max_install_names,-dead_strip_dylibs"
 CPATH="$mydir/local/include"
 LIBRARY_PATH="$mydir/local/lib"
 
@@ -190,6 +190,7 @@ mkdir "$mydir/installer/usrlocal/share/man/man1"
 mkdir "$mydir/installer/usrlocal/share/info"
 mkdir "$mydir/installer/usrlocal/share/cgdb"
 cat "$mydir/local/bin/cgdb" > "$mydir/installer/usrlocal/bin/cgdb"
+strip "$mydir/installer/usrlocal/bin/cgdb"
 cat "$mydir/local/share/man/man1/cgdb.1" > "$mydir/installer/usrlocal/share/man/man1/cgdb.1"
 cat "$mydir/local/share/info/cgdb.info" > "$mydir/installer/usrlocal/share/info/cgdb.info"
 cat "$mydir/local/share/cgdb/cgdb.txt" > "$mydir/installer/usrlocal/share/cgdb/cgdb.txt"
@@ -224,11 +225,11 @@ cat > "$mydir/installer/Info.plist" <<INFOPLIST
 	<key>CFBundleIdentifier</key>
 	<string>net.sourceforge.cgdb</string>
 	<key>CFBundleGetInfoString</key>
-	<string>cgdb 0.6.6_2</string>
+	<string>cgdb 0.6.6_3</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.6.6_2</string>
+	<string>0.6.6_3</string>
 	<key>CFBundleVersion</key>
-	<string>06.6.2</string>
+	<string>06.6.3</string>
 	<key>IFMajorVersion</key>
 	<integer>6</integer>
 	<key>IFMinorVersion</key>
