@@ -225,11 +225,11 @@ cat > "$mydir/installer/Info.plist" <<INFOPLIST
 	<key>CFBundleIdentifier</key>
 	<string>net.sourceforge.cgdb</string>
 	<key>CFBundleGetInfoString</key>
-	<string>cgdb 0.6.6_3</string>
+	<string>cgdb 0.6.6_4</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.6.6_3</string>
+	<string>0.6.6_4</string>
 	<key>CFBundleVersion</key>
-	<string>06.6.3</string>
+	<string>06.6.4</string>
 	<key>IFMajorVersion</key>
 	<integer>6</integer>
 	<key>IFMinorVersion</key>
@@ -266,9 +266,9 @@ echo ""
 echo "*** creating installer"
 "$fr" bash -s <<FAKEROOT
 chown -R root:wheel "$mydir/installer/usrlocal"
-"$pm" -build -v -u -p "$mydir/installer/cgdb/cgdb.pkg" -ds -f "$mydir/installer/usrlocal" -i "$mydir/installer/Info.plist" -d "$mydir/installer/Description.plist" -r "$mydir/resources"
-find "$mydir/installer/cgdb/cgdb.pkg/Contents/Resources" -type d -mindepth 1 -print0 | xargs -0 rm -rf
-cat "$mydir/installer/Description.plist" > "$mydir/installer/cgdb/cgdb.pkg/Contents/Resources/Description.plist"
+"$pm" -build -v -u -p "$mydir/installer/cgdb/cgdb.mpkg" -ds -f "$mydir/installer/usrlocal" -i "$mydir/installer/Info.plist" -d "$mydir/installer/Description.plist" -r "$mydir/resources"
+find "$mydir/installer/cgdb/cgdb.mpkg/Contents/Resources" -type d -mindepth 1 -print0 | xargs -0 rm -rf
+cat "$mydir/installer/Description.plist" > "$mydir/installer/cgdb/cgdb.mpkg/Contents/Resources/Description.plist"
 find "$mydir/installer/cgdb" ! -type d -print0 | xargs -0 chmod 444
 find "$mydir/installer/cgdb" -type d -print0 | xargs -0 chmod 555
 find "$mydir/installer/cgdb" -print0 | xargs -0n1 "$sf" -d "$stampsf"
