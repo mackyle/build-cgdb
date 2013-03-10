@@ -1,11 +1,10 @@
---- tokenizer.c	2010-11-13 10:09:48.000000000 +0000
-+++ tokenizer.c	2010-11-13 10:09:48.000000000 +0000
-@@ -5,7 +5,7 @@
- 
+--- cgdb-0.6.7/lib/tokenizer/tokenizer.c	2013-01-13 05:13:04.000000000 +0000
++++ cgdb-0.6.7/lib/tokenizer/tokenizer.c	2013-03-10 02:11:31.000000000 +0000
+@@ -6,6 +6,7 @@
  /* Some default file extensions */
  char *c_extensions[] = {
--    ".c", ".C", ".cc", ".cpp", ".cxx", ".h", ".hpp", ".hxx" };
-+    ".c", ".C", ".cc", ".cpp", ".cxx", ".h", ".hpp", ".hxx", ".cp", ".m", ".M", ".mm" };
- char *ada_extensions[] = { ".adb", ".ads", ".ada",".ADB", ".ADS", ".ADA" };
- 
- extern int c_lex ( void );
+     ".c", ".C", ".cc", ".cpp", ".cxx", ".c++", ".h", ".hpp", ".hxx", ".hh", ".ipp", ".inl", ".moc"
++,   ".cp", ".m", ".M", ".mm"
+ };
+ char *d_extensions[] = { ".d", ".di" };
+ char *ada_extensions[] = { ".adb", ".ads", ".ada", ".ADB", ".ADS", ".ADA" };

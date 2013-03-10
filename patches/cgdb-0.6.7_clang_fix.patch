@@ -1,0 +1,25 @@
+--- cgdb-0.6.7/lib/tgdb/annotate-two/commands.c	2013-01-13 05:13:04.000000000 +0000
++++ cgdb-0.6.7/lib/tgdb/annotate-two/commands.c	2013-03-10 02:26:07.000000000 +0000
+@@ -964,9 +964,9 @@ static char *commands_create_command(str
+                 ibuf_add(temp_file_name, data);
+             }
+             if (data == NULL)
+-                ncom = (char *) cgdb_malloc(sizeof (char) * (16));
++                ncom = (char *) cgdb_malloc(sizeof (char) * (19));
+             else
+-                ncom = (char *) cgdb_malloc(sizeof (char) * (18 +
++                ncom = (char *) cgdb_malloc(sizeof (char) * (21 +
+                                 strlen(data)));
+             strcpy(ncom, "server list ");
+ 
+@@ -975,7 +975,10 @@ static char *commands_create_command(str
+                 strcat(ncom, ibuf_get(temp_file_name));
+                 strcat(ncom, "\"");
+                 strcat(ncom, ":1");
++            } else {
++                strcat(ncom, "+0");
+             }
++            strcat(ncom, ",+0");
+ 
+             /* This happens when the user wants to get the absolute path of 
+              * the current file. They pass in NULL to represent that. */
