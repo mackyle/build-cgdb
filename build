@@ -277,7 +277,7 @@ find "$mydir/installer/cgdb" ! -type d -print0 | xargs -0 chmod 444
 find "$mydir/installer/cgdb" -type d -print0 | xargs -0 chmod 555
 find "$mydir/installer/cgdb" -print0 | xargs -0n1 "$sf" -d "$stampsf"
 find "$mydir/installer/cgdb" -print0 | xargs -0 touch -t "$stamp"
-hdiutil create -scrub -srcfolder "$mydir/installer/cgdb" "$mydir/installer/cgdb.dmg" -format UDZO -imagekey zlib-level=9 -anyowners -skipunreadable
+hdiutil create -scrub -srcfolder "$mydir/installer/cgdb" "$mydir/installer/cgdb.dmg" -format UDBZ -anyowners -skipunreadable
 rm -f "$mydir/$DMG_NAME"
 cat "$mydir/installer/cgdb.dmg" > "$mydir/$DMG_NAME"
 "$sf" -d "$stampsf" "$mydir/$DMG_NAME"
