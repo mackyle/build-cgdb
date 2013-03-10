@@ -3,7 +3,7 @@
 # build cgdb script
 # Copyright (C) 2011,2012,2013 Kyle J. McKay.  All rights reserved.
 
-# Version 1.1.0
+# Version 1.1.1
 
 set -e
 PATH="`getconf PATH`"
@@ -269,6 +269,7 @@ echo ""
 echo "*** creating installer"
 "$fr" bash -s <<FAKEROOT
 chown -R root:wheel "$mydir/installer/usrlocal"
+cat "$mydir/dmg/README_INSTALL.txt" > "$mydir/installer/cgdb/README_INSTALL.txt"
 "$pm" -build -v -u -p "$mydir/installer/cgdb/cgdb.mpkg" -ds -f "$mydir/installer/usrlocal" -i "$mydir/installer/Info.plist" -d "$mydir/installer/Description.plist" -r "$mydir/resources"
 find "$mydir/installer/cgdb/cgdb.mpkg/Contents/Resources" -type d -mindepth 1 -print0 | xargs -0 rm -rf
 cat "$mydir/installer/Description.plist" > "$mydir/installer/cgdb/cgdb.mpkg/Contents/Resources/Description.plist"
