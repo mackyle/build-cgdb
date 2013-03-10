@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # build cgdb script
-# Copyright (C) 2011,2012 Kyle J. McKay.  All rights reserved.
+# Copyright (C) 2011,2012,2013 Kyle J. McKay.  All rights reserved.
+
+# Version 1.1.0
 
 set -e
 PATH="`getconf PATH`"
@@ -23,11 +25,18 @@ myname="$(basename "$myname")"
 READLINE='http://ftp.gnu.org/gnu/readline/readline-5.2.tar.gz'
 READLINE_MD5=e39331f32ad14009b9ff49cc10c5e751
 
-#CGDB='http://downloads.sourceforge.net/cgdb/cgdb-0.6.6.tar.gz'
-CGDB='http://github.com/downloads/cgdb/cgdb/cgdb-0.6.6.tar.gz'
-CGDB_MD5=394b542b495755ab8392b7e88dace744
+CGDB=cgdb-0.6.6.tar.bz2
+CGDB_MD5=3644ee805a5e03f4ed9237693a39ed58
 
 DMG_NAME=cgdb-0.6.6.dmg
+
+# clean if requested
+if [ "$#" -eq 1 -a "$1" = "clean" ]; then
+  rm -rf "$mydir/installer" "$mydir/local"
+  rm -rf "$mydir/sources/readline" "$mydir/sources/readline-build"
+  rm -rf "$mydir/sources/cgdb" "$mydir/sources/cgdb-build"
+  exit 0
+fi
 
 echo ""
 
@@ -74,40 +83,34 @@ else
   "$fr" find "$mydir" -print > /dev/null
 fi
 
-AGENT='Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0)'
-if [ ! -d "$mydir/sources" ]; then
-  mkdir "$mydir/sources"
-fi
-
-if [ ! -r "$mydir/sources/readline.tar.gz" ] || [ `md5 -q "$mydir/sources/readline.tar.gz"` != $READLINE_MD5 ]; then
+rlgz="$(basename -- "$READLINE")"
+if [ ! -r "$mydir/sources/$rlgz" ] || [ `md5 -q "$mydir/sources/$rlgz"` != $READLINE_MD5 ]; then
   echo "*** fetching readline sources from $READLINE"
   echo ""
-  rm -f "$mydir/sources/readline.tar.gz"
-  curl -f -H "User-Agent: $AGENT" -L -o "$mydir/sources/readline.tar.gz" "$READLINE"
+  rm -f "$mydir/sources/$rlgz"
+  curl -f -H "User-Agent:" -L -o "$mydir/sources/$rlgz" "$READLINE"
   echo ""
-  if [ `md5 -q "$mydir/sources/readline.tar.gz"` != $READLINE_MD5 ]; then
+  if [ `md5 -q "$mydir/sources/$rlgz"` != $READLINE_MD5 ]; then
     echo "error: readline sources md5 mismatch (expected $READLINE_MD5)" >&2
     exit 1
   fi
 fi
 
-if [ ! -r "$mydir/sources/cgdb.tar.gz" ] || [ `md5 -q "$mydir/sources/cgdb.tar.gz"` != $CGDB_MD5 ]; then
-  echo "*** fetching cgdb sources from $CGDB"
-  echo ""
-  rm -f "$mydir/sources/cgdb.tar.gz"
-  curl -f -k -H "User-Agent:" -L -o "$mydir/sources/cgdb.tar.gz" "$CGDB"
-  echo ""
-  if [ `md5 -q "$mydir/sources/cgdb.tar.gz"` != $CGDB_MD5 ]; then
-    echo "error: cgdb sources md5 mismatch (expected $CGDB_MD5)" >&2
-    exit 1
-  fi
+cgbz="$(basename -- "$CGDB")"
+if [ ! -r "$mydir/sources/$cgbz" ]; then
+  echo "error: missing cgdb source files sources/$cgbz" >&2
+  exit 1
+fi
+if [ `md5 -q "$mydir/sources/$cgbz"` != $CGDB_MD5 ]; then
+  echo "error: cgdb sources md5 mismatch (expected $CGDB_MD5)" >&2
+  exit 1
 fi
 
 echo "*** expanding sources"
 rm -rf "$mydir/sources/cgdb" "$mydir/sources/readline"
 mkdir "$mydir/sources/cgdb" "$mydir/sources/readline"
-tar -xzf "$mydir/sources/readline.tar.gz" $strip1 --directory="$mydir/sources/readline"
-tar -xzf "$mydir/sources/cgdb.tar.gz" $strip1 --directory="$mydir/sources/cgdb"
+tar -xzf "$mydir/sources/$rlgz" $strip1 --directory="$mydir/sources/readline"
+tar -xjf "$mydir/sources/$cgbz" $strip1 --directory="$mydir/sources/cgdb"
 echo ""
 
 echo "*** applying patches"
@@ -131,8 +134,8 @@ OSXDK="-isysroot$SDK104"
 OSXMN="-mmacosx-version-min=10.4"
 CFLAGS="$ARCH $OSXDK $OSXMN $COPT"
 LDFLAGS="-Wl,-search_paths_first,-headerpad_max_install_names,-dead_strip_dylibs"
-CPATH="$mydir/local/include"
-LIBRARY_PATH="$mydir/local/lib"
+CPATH="$mydir/local/usr/local/include"
+LIBRARY_PATH="$mydir/local/usr/local/lib"
 
 export CC
 export CFLAGS
@@ -143,7 +146,7 @@ export LIBRARY_PATH
 echo "*** configuring readline"
 rm -rf "$mydir/sources/readline-build"
 mkdir "$mydir/sources/readline-build"
-(cd "$mydir/sources/readline-build" && ../readline/configure --enable-static --disable-shared --prefix="$mydir/local")
+(cd "$mydir/sources/readline-build" && ../readline/configure --enable-static --disable-shared --prefix="/usr/local")
 echo ""
 
 echo "*** building readline"
@@ -151,13 +154,13 @@ make -w -C "$mydir/sources/readline-build"
 echo ""
 
 echo "*** installing readline to local area"
-make -w -C "$mydir/sources/readline-build" install
+make -w -C "$mydir/sources/readline-build" DESTDIR="$mydir/local" install
 echo ""
 
 echo "*** configuring cgdb"
 rm -rf "$mydir/sources/cgdb-build"
 mkdir "$mydir/sources/cgdb-build"
-(cd "$mydir/sources/cgdb-build" && ../cgdb/configure --disable-dependency-tracking --with-readline="$mydir/local" --prefix="$mydir/local")
+(cd "$mydir/sources/cgdb-build" && ../cgdb/configure --disable-dependency-tracking --with-readline="$mydir/local" --prefix="/usr/local")
 echo ""
 
 echo "*** building cgdb"
@@ -165,7 +168,7 @@ make -w -C "$mydir/sources/cgdb-build"
 echo ""
 
 echo "*** installing cgdb to local area"
-make -w -C "$mydir/sources/cgdb-build" install
+make -w -C "$mydir/sources/cgdb-build" DESTDIR="$mydir/local" install
 echo ""
 
 if [ -z "$fr" ]; then
@@ -189,11 +192,11 @@ mkdir "$mydir/installer/usrlocal/share/man"
 mkdir "$mydir/installer/usrlocal/share/man/man1"
 mkdir "$mydir/installer/usrlocal/share/info"
 mkdir "$mydir/installer/usrlocal/share/cgdb"
-cat "$mydir/local/bin/cgdb" > "$mydir/installer/usrlocal/bin/cgdb"
+cat "$mydir/local/usr/local/bin/cgdb" > "$mydir/installer/usrlocal/bin/cgdb"
 strip "$mydir/installer/usrlocal/bin/cgdb"
-cat "$mydir/local/share/man/man1/cgdb.1" > "$mydir/installer/usrlocal/share/man/man1/cgdb.1"
-cat "$mydir/local/share/info/cgdb.info" > "$mydir/installer/usrlocal/share/info/cgdb.info"
-cat "$mydir/local/share/cgdb/cgdb.txt" > "$mydir/installer/usrlocal/share/cgdb/cgdb.txt"
+cat "$mydir/local/usr/local/share/man/man1/cgdb.1" > "$mydir/installer/usrlocal/share/man/man1/cgdb.1"
+cat "$mydir/local/usr/local/share/info/cgdb.info" > "$mydir/installer/usrlocal/share/info/cgdb.info"
+cat "$mydir/local/usr/local/share/cgdb/cgdb.txt" > "$mydir/installer/usrlocal/share/cgdb/cgdb.txt"
 find "$mydir/installer/usrlocal" ! -type d -print0 | xargs -0 chmod 444
 chmod 555 "$mydir/installer/usrlocal/bin/cgdb"
 find "$mydir/installer/usrlocal" -type d -print0 | xargs -0 chmod 755
@@ -225,11 +228,11 @@ cat > "$mydir/installer/Info.plist" <<INFOPLIST
 	<key>CFBundleIdentifier</key>
 	<string>net.sourceforge.cgdb</string>
 	<key>CFBundleGetInfoString</key>
-	<string>cgdb 0.6.6_4</string>
+	<string>cgdb 0.6.6_5</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.6.6_4</string>
+	<string>0.6.6_5</string>
 	<key>CFBundleVersion</key>
-	<string>06.6.4</string>
+	<string>06.6.5</string>
 	<key>IFMajorVersion</key>
 	<integer>6</integer>
 	<key>IFMinorVersion</key>
