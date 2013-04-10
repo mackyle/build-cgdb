@@ -22,7 +22,7 @@ Requirements
 ------------
 In order to build the installer, fakeroot must be installed.  A compatible
 version of fakeroot can be installed from the github
-http://mackyle.github.com/fakeroot site.
+http://mackyle.github.io/fakeroot site.
 
 In order to build, the Mac OS X 10.4u SDK is required as well as the developer
 tools (with gcc version 4.0) and building requires Mac OS X 10.4 or later.

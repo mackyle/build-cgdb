@@ -75,7 +75,7 @@ if ! fr="`PATH="$PATH:/usr/local/bin:/opt/local/bin:/sw/bin" type -P fakeroot`";
   echo ""
   echo "error: unable to find fakeroot installation" >&2
   echo "warning: build proceeding, but no installer will be created" >&2
-  echo "info: see http://mackyle.github.com/fakeroot to install fakeroot" >&2
+  echo "info: see http://mackyle.github.io/fakeroot to install fakeroot" >&2
   echo ""
   sleep 2
 else
@@ -177,7 +177,7 @@ if [ -z "$fr" ]; then
   echo "error: unable to find fakeroot installation" >&2
   echo "warning: no installer will be created" >&2
   echo "warning: the completed build is in $mydir/local" >&2
-  echo "info: see http://mackyle.github.com/fakeroot to install fakeroot" >&2
+  echo "info: see http://mackyle.github.io/fakeroot to install fakeroot" >&2
   exit 1
 fi
 
